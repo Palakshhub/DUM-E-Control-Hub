@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DUM-E Control Hub</title>
+  <link rel="icon" type="image/png" href="https://imgs.search.brave.com/Cg7y8zwSvrEXtCw2r6HrvyEbYzOAd_VYziLihTUdenc/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9pLnBp/bmltZy5jb20vb3Jp/Z2luYWxzLzY5L2Nj/L2M2LzY5Y2NjNmQz/NjZlZTE5NWQ0ZmVj/OTRmNTFhOTY1Mzlj/LmpwZw">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap');
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: 'Orbitron', sans-serif;
+      background: #0000008f url('https://imgs.search.brave.com/Tnppxdx3IcSXHeI8tKQlUifbvYXUJVSbkT3_SxIaLDw/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9pbWFn/ZXM4LmFscGhhY29k/ZXJzLmNvbS8xMjYv/dGh1bWJiaWctMTI2/NjQ2OS53ZWJw') no-repeat center center fixed;
+      background-size: cover;
+      background-color: rgba(0, 0, 0, 0.192);
+      background-blend-mode: multiply;
+    }
+
+    .spider-card {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      border: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      box-shadow: inset 0 0 40px rgba(255, 0, 0, 0.2);
+    }
+
+    .controls {
+      background: rgba(255, 255, 255, 0.127);
+      padding: 1.5rem;
+      border-radius: 1rem;
+      box-shadow: 0 0 25px rgba(255, 255, 255, 0.033);
+    }
+
+    button {
+      transition: all 0.2s ease-in-out;
+    }
+
+    button:hover {
+      transform: scale(1.08);
+    }
+  </style>
+</head>
+
+<body class="text-white">
+  <main class="spider-card">
+    <header class="text-center mb-6">
+      <h1 class="text-4xl sm:text-5xl font-bold text-red-500 mb-2">DUM-E Control Hub</h1>
+      <p class="text-blue-400 text-sm">Control your Spider-Bot through Bluetooth</p>
+    </header>
+
+    <div class="controls text-center">
+      <div class="mb-6">
+        <button id="connectBtn" class="bg-gradient-to-r from-red-600 to-blue-600 hover:from-red-700 hover:to-blue-700 text-white font-semibold py-2 px-6 rounded-lg">
+          🔌 Connect to DUM-E
+        </button>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3 justify-items-center mb-6">
+        <div></div>
+        <button id="upBtn" class="bg-red-600 hover:bg-red-700 w-16 h-16 rounded-full text-2xl font-bold">⬆</button>
+        <div></div>
+
+        <button id="leftBtn" class="bg-blue-600 hover:bg-blue-700 w-16 h-16 rounded-full text-2xl font-bold">⬅</button>
+        <button id="stopBtn" class="bg-gray-700 hover:bg-gray-800 w-16 h-16 rounded-full text-lg font-semibold">⏹</button>
+        <button id="rightBtn" class="bg-blue-600 hover:bg-blue-700 w-16 h-16 rounded-full text-2xl font-bold">➡</button>
+
+        <div></div>
+        <button id="downBtn" class="bg-red-600 hover:bg-red-700 w-16 h-16 rounded-full text-2xl font-bold">⬇</button>
+        <div></div>
+      </div>
+
+      <div class="flex flex-col gap-3">
+        <button id="walkBtn" class="bg-gradient-to-r from-blue-600 to-red-600 hover:from-blue-700 hover:to-red-700 py-2 rounded-lg font-medium text-white">🕷 Walk</button>
+        <button id="sitBtn" class="bg-gradient-to-r from-red-600 to-blue-600 hover:from-red-700 hover:to-blue-700 py-2 rounded-lg font-medium text-white">🕷 Sit</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let bluetoothDevice;
+    let txCharacteristic;
+    const SERVICE_UUID = "12345678-1234-5678-1234-56789abcdef0";
+    const CHARACTERISTIC_UUID = "abcdef01-1234-5678-1234-56789abcdef0";
+
+    document.getElementById('connectBtn').addEventListener('click', async () => {
+      try {
+        bluetoothDevice = await navigator.bluetooth.requestDevice({
+          filters: [{ namePrefix: "DUM-E" }],
+          optionalServices: [SERVICE_UUID]
+        });
+        const server = await bluetoothDevice.gatt.connect();
+        const service = await server.getPrimaryService(SERVICE_UUID);
+        txCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+        alert("✅ Connected to DUM-E!");
+      } catch (err) {
+        alert("⚠ Could not connect: " + err);
+      }
+    });
+
+    async function sendCommand(command) {
+      if (!txCharacteristic) {
+        alert("⚠ Not connected. Click 'Connect to DUM-E' first.");
+        return;
+      }
+      try {
+        const encoder = new TextEncoder();
+        await txCharacteristic.writeValue(encoder.encode(command));
+        console.log("📤 Sent:", command);
+      } catch (err) {
+        alert("⚠ Failed to send: " + err);
+      }
+    }
+
+    const buttons = {
+      upBtn: "UP",
+      downBtn: "DOWN",
+      leftBtn: "LEFT",
+      rightBtn: "RIGHT",
+      walkBtn: "WALK",
+      sitBtn: "SIT",
+      stopBtn: "STOP"
+    };
+
+    for (let id in buttons) {
+      document.getElementById(id).addEventListener('click', () => sendCommand(buttons[id]));
+    }
+  </script>
+</body>
+</html>
