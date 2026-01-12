@@ -1,164 +1,166 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>DUM-E Control</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DUM-E Control Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 
-<style>
-body {
-  background: #000;
-  color: #fff;
-  font-family: Arial, sans-serif;
-  text-align: center;
-  margin: 0;
-}
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap');
 
-h1 {
-  color: red;
-  margin: 15px 0;
-}
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: 'Orbitron', sans-serif;
+      background: #000 url('https://images8.alphacoders.com/126/thumbbig-1266469.webp') no-repeat center center fixed;
+      background-size: cover;
+      background-blend-mode: multiply;
+    }
 
-button {
-  background: red;
-  color: black;
-  border: none;
-  padding: 12px 20px;
-  margin: 8px;
-  font-size: 16px;
-  border-radius: 8px;
-  cursor: pointer;
-}
+    .spider-card {
+      width: 100vw;
+      height: 100vh;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(10px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
 
-button:active {
-  background: darkred;
-  color: white;
-}
+    .controls {
+      background: rgba(255,255,255,0.15);
+      padding: 1.5rem;
+      border-radius: 1rem;
+      text-align: center;
+    }
 
-#joystick-container {
-  width: 220px;
-  height: 220px;
-  background: #111;
-  border-radius: 50%;
-  margin: 20px auto;
-  position: relative;
-  border: 2px solid red;
-}
+    .joystick-base {
+      width: 120px;
+      height: 120px;
+      background: rgba(255,255,255,0.25);
+      border-radius: 50%;
+      position: relative;
+      margin: auto;
+      touch-action: none;
+    }
 
-#joystick {
-  width: 70px;
-  height: 70px;
-  background: red;
-  border-radius: 50%;
-  position: absolute;
-  top: 75px;
-  left: 75px;
-  touch-action: none;
-}
-</style>
+    .joystick-stick {
+      width: 60px;
+      height: 60px;
+      background: red;
+      border-radius: 50%;
+      position: absolute;
+      top: 30px;
+      left: 30px;
+    }
+
+    button:hover {
+      transform: scale(1.08);
+    }
+  </style>
 </head>
 
-<body>
+<body class="text-white">
+  <main class="spider-card">
+    <div class="controls space-y-4">
+      <h1 class="text-3xl font-bold text-red-500">DUM-E Control Hub</h1>
 
-<h1>DUM-E Control Hub</h1>
+      <button id="connectBtn" class="bg-blue-600 px-6 py-2 rounded-lg font-semibold">
+        🔌 Connect
+      </button>
 
-<button onclick="connectBLE()">CONNECT</button>
+      <!-- JOYSTICK -->
+      <div class="joystick-base" id="joystickBase">
+        <div class="joystick-stick" id="joystickStick"></div>
+      </div>
 
-<div id="joystick-container">
-  <div id="joystick"></div>
-</div>
-
-<div>
-  <button onclick="sendCommand('SIT')">SIT</button>
-  <button onclick="sendCommand('STAND')">STAND</button>
-  <button onclick="sendCommand('WAVE')">WAVE</button>
-</div>
+      <!-- BUTTONS -->
+      <button id="sitBtn" class="bg-red-600 py-2 rounded-lg w-full">SIT</button>
+      <button id="standBtn" class="bg-green-600 py-2 rounded-lg w-full">STAND</button>
+      <button id="waveBtn" class="bg-purple-600 py-2 rounded-lg w-full">WAVE</button>
+    </div>
+  </main>
 
 <script>
-let device, characteristic;
-const SERVICE_UUID = "12345678-1234-1234-1234-1234567890ab";
-const CHAR_UUID    = "abcdefab-1234-5678-1234-abcdefabcdef";
+let txCharacteristic;
+let espConnected = false;
 
-async function connectBLE() {
-  device = await navigator.bluetooth.requestDevice({
-    filters: [{ services: [SERVICE_UUID] }]
-  });
+const SERVICE_UUID = "12345678-1234-5678-1234-56789abcdef0";
+const CHARACTERISTIC_UUID = "abcdef01-1234-5678-1234-56789abcdef0";
 
-  const server = await device.gatt.connect();
-  const service = await server.getPrimaryService(SERVICE_UUID);
-  characteristic = await service.getCharacteristic(CHAR_UUID);
+document.getElementById("connectBtn").onclick = async () => {
+  try {
+    const device = await navigator.bluetooth.requestDevice({
+      filters: [{ namePrefix: "DUM-E" }],
+      optionalServices: [SERVICE_UUID]
+    });
 
-  alert("Connected to ESP32");
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(SERVICE_UUID);
+    txCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+
+    espConnected = true;
+    alert("Connected ✅");
+  } catch (e) {
+    alert("Connection failed ⚠");
+  }
+};
+
+function send(cmd) {
+  if (!espConnected) return;
+  txCharacteristic.writeValue(new TextEncoder().encode(cmd));
 }
 
-function sendCommand(cmd) {
-  if (!characteristic) return;
-  const data = new TextEncoder().encode(cmd);
-  characteristic.writeValue(data);
+/* BUTTON COMMANDS */
+sitBtn.onclick   = () => send("SIT");
+standBtn.onclick = () => send("STAND");
+waveBtn.onclick  = () => send("WAVE");
+
+/* JOYSTICK LOGIC */
+const base = joystickBase;
+const stick = joystickStick;
+const maxDist = 40;
+let active = false;
+
+function centerStick() {
+  stick.style.left = "30px";
+  stick.style.top  = "30px";
+  send("STOP");
 }
 
-// -------- JOYSTICK LOGIC ----------
-const joystick = document.getElementById("joystick");
-const container = document.getElementById("joystick-container");
+function moveStick(x, y) {
+  const rect = base.getBoundingClientRect();
+  let dx = x - rect.left - 60;
+  let dy = y - rect.top  - 60;
 
-let dragging = false;
-let lastCmd = "";
+  const dist = Math.hypot(dx, dy);
+  if (dist > maxDist) {
+    dx = dx * maxDist / dist;
+    dy = dy * maxDist / dist;
+  }
 
-function handleMove(x, y) {
-  const rect = container.getBoundingClientRect();
-  const centerX = rect.width / 2;
-  const centerY = rect.height / 2;
+  stick.style.left = 30 + dx + "px";
+  stick.style.top  = 30 + dy + "px";
 
-  const dx = x - rect.left - centerX;
-  const dy = y - rect.top - centerY;
-
-  const maxDist = 70;
-  const dist = Math.min(Math.hypot(dx, dy), maxDist);
-  const angle = Math.atan2(dy, dx);
-
-  const nx = dist * Math.cos(angle);
-  const ny = dist * Math.sin(angle);
-
-  joystick.style.left = (centerX + nx - 35) + "px";
-  joystick.style.top  = (centerY + ny - 35) + "px";
-
-  let cmd = "";
-
-  if (Math.abs(nx) > Math.abs(ny)) {
-    cmd = nx > 0 ? "RIGHT" : "LEFT";
+  if (Math.abs(dx) > Math.abs(dy)) {
+    send(dx > 0 ? "RIGHT" : "LEFT");
   } else {
-    cmd = ny > 0 ? "BACKWARD" : "FORWARD";
-  }
-
-  if (cmd !== lastCmd) {
-    sendCommand(cmd);
-    lastCmd = cmd;
+    send(dy > 0 ? "BACKWARD" : "FORWARD");
   }
 }
 
-function resetJoystick() {
-  joystick.style.left = "75px";
-  joystick.style.top  = "75px";
-  sendCommand("STOP");
-  lastCmd = "";
-}
+base.onmousedown = () => active = true;
+window.onmousemove = e => active && moveStick(e.clientX, e.clientY);
+window.onmouseup = () => { active = false; centerStick(); };
 
-joystick.addEventListener("pointerdown", e => {
-  dragging = true;
-  joystick.setPointerCapture(e.pointerId);
-});
-
-document.addEventListener("pointermove", e => {
-  if (dragging) handleMove(e.clientX, e.clientY);
-});
-
-document.addEventListener("pointerup", () => {
-  if (dragging) {
-    dragging = false;
-    resetJoystick();
-  }
-});
+base.ontouchstart = () => active = true;
+base.ontouchmove = e => {
+  const t = e.touches[0];
+  moveStick(t.clientX, t.clientY);
+};
+base.ontouchend = () => { active = false; centerStick(); };
 </script>
-
 </body>
 </html>
