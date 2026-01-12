@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DUM-E Control Hub</title>
+
+<!-- TAB ICON -->
+<link rel="icon" href="https://4kwallpapers.com/images/wallpapers/spider-man-logo-red-background-5k-8k-7680x4320-7214.png">
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap');
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Orbitron', sans-serif;
+  overflow: hidden;
+}
+
+/* BACKGROUND IMAGE */
+body {
+  background: url("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTSOSq7c7sFfDwmVwOHFQHAPTzm3SFyqZmqZg&s")
+    center / cover no-repeat fixed;
+}
+
+/* GLOBAL GLASS LAYER */
+.glass-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 0;
+}
+
+/* GLASS CARD */
+.panel {
+  background: rgba(0, 0, 0, 0);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  position: relative;
+  z-index: 1;
+}
+
+/* JOYSTICK */
+.joystick-base {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(103, 103, 103, 0.18);
+  border: 1px solid rgba(145, 145, 145, 0.5);
+  position: relative;
+  margin: auto;
+  touch-action: none;
+}
+
+.joystick-stick {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #575757, #909090);
+  position: absolute;
+  top: 30px;
+  left: 30px;
+
+}
+
+/* BUTTONS – RED & BLACK */
+button {
+  background: linear-gradient(180deg, #b30000, #4a0000);
+  border: 1px solid rgba(255,0,0,0.6);
+  box-shadow: 0 0 12px rgba(255,0,0,0.5);
+  transition: 0.15s;
+}
+
+button:hover {
+  box-shadow: 0 0 18px rgba(255,0,0,0.8);
+}
+
+button:active {
+  transform: scale(0.95);
+}
+</style>
+</head>
+
+<body class="text-white flex items-center justify-center">
+
+<div class="glass-overlay"></div>
+
+<div class="panel p-6 rounded-xl space-y-4 w-[3000px] text-center">
+  <h1 class="text-2xl font-bold text-red-500">DUM-E Control Hub</h1>
+
+  <button id="connectBtn" class="py-2 rounded-lg w-full">
+    CONNECT
+  </button>
+
+  <div class="joystick-base" id="joystickBase">
+    <div class="joystick-stick" id="joystickStick"></div>
+  </div>
+
+  <button id="sitBtn" class="py-2 rounded-lg w-full">SIT</button>
+  <button id="standBtn" class="py-2 rounded-lg w-full">STAND</button>
+  <button id="waveBtn" class="py-2 rounded-lg w-full">WAVE</button>
+</div>
+
+<script>
+let txCharacteristic;
+let espConnected = false;
+
+const SERVICE_UUID = "12345678-1234-5678-1234-56789abcdef0";
+const CHARACTERISTIC_UUID = "abcdef01-1234-5678-1234-56789abcdef0";
+
+const connectBtn = document.getElementById("connectBtn");
+const sitBtn = document.getElementById("sitBtn");
+const standBtn = document.getElementById("standBtn");
+const waveBtn = document.getElementById("waveBtn");
+const base = document.getElementById("joystickBase");
+const stick = document.getElementById("joystickStick");
+
+connectBtn.onclick = async () => {
+  try {
+    const device = await navigator.bluetooth.requestDevice({
+      filters: [{ namePrefix: "DUM-E" }],
+      optionalServices: [SERVICE_UUID]
+    });
+
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(SERVICE_UUID);
+    txCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+
+    espConnected = true;
+    alert("Connected ✅");
+  } catch (e) {
+    alert("BLE Failed");
+    console.error(e);
+  }
+};
+
+async function send(cmd) {
+  if (!espConnected || !txCharacteristic) return;
+  console.log("Sending:", cmd);
+  await txCharacteristic.writeValue(
+    new TextEncoder().encode(cmd)
+  );
+}
+
+sitBtn.onclick   = () => send("SIT");
+standBtn.onclick = () => send("STAND");
+waveBtn.onclick  = () => send("WAVE");
+
+const maxDist = 40;
+let active = false;
+
+function centerStick() {
+  stick.style.left = "30px";
+  stick.style.top  = "30px";
+  send("STOP");
+}
+
+function moveStick(x, y) {
+  const rect = base.getBoundingClientRect();
+  let dx = x - rect.left - 60;
+  let dy = y - rect.top  - 60;
+
+  const dist = Math.hypot(dx, dy);
+  if (dist > maxDist) {
+    dx *= maxDist / dist;
+    dy *= maxDist / dist;
+  }
+
+  stick.style.left = 30 + dx + "px";
+  stick.style.top  = 30 + dy + "px";
+
+  if (Math.abs(dx) > Math.abs(dy)) {
+    send(dx > 0 ? "RIGHT" : "LEFT");
+  } else {
+    send(dy > 0 ? "BACKWARD" : "FORWARD");
+  }
+}
+
+base.onmousedown = () => active = true;
+window.onmousemove = e => active && moveStick(e.clientX, e.clientY);
+window.onmouseup = () => { active = false; centerStick(); };
+
+base.ontouchstart = () => active = true;
+base.ontouchmove = e => {
+  moveStick(e.touches[0].clientX, e.touches[0].clientY);
+};
+base.ontouchend = () => { active = false; centerStick(); };
+</script>
+</body>
+</html>
