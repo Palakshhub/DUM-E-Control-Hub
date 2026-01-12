@@ -1,87 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>DUM-E Control Hub</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DUM-E Control Hub</title>
+<script src="https://cdn.tailwindcss.com"></script>
 
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap');
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap');
 
-    html, body {
-      height: 100%;
-      width: 100%;
-      overflow: hidden;
-      font-family: 'Orbitron', sans-serif;
-      background: #000 url('https://images8.alphacoders.com/126/thumbbig-1266469.webp') no-repeat center center fixed;
-      background-size: cover;
-      background-blend-mode: multiply;
-    }
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Orbitron', sans-serif;
+  background:
+    radial-gradient(circle at top, #8b0000, #000),
+    repeating-linear-gradient(
+      45deg,
+      rgba(255,0,0,0.05) 0,
+      rgba(255,0,0,0.05) 1px,
+      transparent 1px,
+      transparent 20px
+    );
+  overflow: hidden;
+}
 
-    .spider-card {
-      width: 100vw;
-      height: 100vh;
-      background: rgba(255,255,255,0.08);
-      backdrop-filter: blur(10px);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+.spider-card {
+  width: 100vw;
+  height: 100vh;
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-    .controls {
-      background: rgba(255,255,255,0.15);
-      padding: 1.5rem;
-      border-radius: 1rem;
-      text-align: center;
-    }
+.controls {
+  background: rgba(0,0,0,0.6);
+  border: 2px solid rgba(255,0,0,0.4);
+  box-shadow: 0 0 25px rgba(255,0,0,0.6);
+  padding: 1.5rem;
+  border-radius: 1.2rem;
+  text-align: center;
+  width: 280px;
+}
 
-    .joystick-base {
-      width: 120px;
-      height: 120px;
-      background: rgba(255,255,255,0.25);
-      border-radius: 50%;
-      position: relative;
-      margin: auto;
-      touch-action: none;
-    }
+.joystick-base {
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, #400, #000);
+  border: 2px solid red;
+  border-radius: 50%;
+  position: relative;
+  margin: auto;
+  touch-action: none;
+}
 
-    .joystick-stick {
-      width: 60px;
-      height: 60px;
-      background: red;
-      border-radius: 50%;
-      position: absolute;
-      top: 30px;
-      left: 30px;
-    }
+.joystick-stick {
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle, #ff3333, #8b0000);
+  border-radius: 50%;
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  box-shadow: 0 0 15px red;
+}
 
-    button:hover {
-      transform: scale(1.08);
-    }
-  </style>
+button {
+  transition: 0.15s ease;
+}
+
+button:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 12px rgba(255,0,0,0.6);
+}
+</style>
 </head>
 
 <body class="text-white">
-  <main class="spider-card">
-    <div class="controls space-y-4">
-      <h1 class="text-3xl font-bold text-red-500">DUM-E Control Hub</h1>
+<main class="spider-card">
+  <div class="controls space-y-4">
+    <h1 class="text-3xl font-bold text-red-500 tracking-widest">DUM-E</h1>
 
-      <button id="connectBtn" class="bg-blue-600 px-6 py-2 rounded-lg font-semibold">
-        🔌 Connect
-      </button>
+    <button id="connectBtn" class="bg-red-700 px-6 py-2 rounded-lg font-semibold">
+      🔌 CONNECT
+    </button>
 
-      <!-- JOYSTICK -->
-      <div class="joystick-base" id="joystickBase">
-        <div class="joystick-stick" id="joystickStick"></div>
-      </div>
-
-      <!-- BUTTONS -->
-      <button id="sitBtn" class="bg-red-600 py-2 rounded-lg w-full">SIT</button>
-      <button id="standBtn" class="bg-green-600 py-2 rounded-lg w-full">STAND</button>
-      <button id="waveBtn" class="bg-purple-600 py-2 rounded-lg w-full">WAVE</button>
+    <div class="joystick-base" id="joystickBase">
+      <div class="joystick-stick" id="joystickStick"></div>
     </div>
-  </main>
+
+    <button id="sitBtn" class="bg-red-800 py-2 rounded-lg w-full">SIT</button>
+    <button id="standBtn" class="bg-green-700 py-2 rounded-lg w-full">STAND</button>
+    <button id="waveBtn" class="bg-purple-700 py-2 rounded-lg w-full">WAVE</button>
+  </div>
+</main>
 
 <script>
 let txCharacteristic;
@@ -89,6 +102,10 @@ let espConnected = false;
 
 const SERVICE_UUID = "12345678-1234-5678-1234-56789abcdef0";
 const CHARACTERISTIC_UUID = "abcdef01-1234-5678-1234-56789abcdef0";
+
+const sitBtn   = document.getElementById("sitBtn");
+const standBtn = document.getElementById("standBtn");
+const waveBtn  = document.getElementById("waveBtn");
 
 document.getElementById("connectBtn").onclick = async () => {
   try {
@@ -103,7 +120,7 @@ document.getElementById("connectBtn").onclick = async () => {
 
     espConnected = true;
     alert("Connected ✅");
-  } catch (e) {
+  } catch {
     alert("Connection failed ⚠");
   }
 };
@@ -113,12 +130,12 @@ function send(cmd) {
   txCharacteristic.writeValue(new TextEncoder().encode(cmd));
 }
 
-/* BUTTON COMMANDS */
+/* BUTTONS */
 sitBtn.onclick   = () => send("SIT");
 standBtn.onclick = () => send("STAND");
 waveBtn.onclick  = () => send("WAVE");
 
-/* JOYSTICK LOGIC */
+/* JOYSTICK */
 const base = joystickBase;
 const stick = joystickStick;
 const maxDist = 40;
@@ -156,10 +173,7 @@ window.onmousemove = e => active && moveStick(e.clientX, e.clientY);
 window.onmouseup = () => { active = false; centerStick(); };
 
 base.ontouchstart = () => active = true;
-base.ontouchmove = e => {
-  const t = e.touches[0];
-  moveStick(t.clientX, t.clientY);
-};
+base.ontouchmove = e => moveStick(e.touches[0].clientX, e.touches[0].clientY);
 base.ontouchend = () => { active = false; centerStick(); };
 </script>
 </body>
