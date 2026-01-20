@@ -101,9 +101,6 @@ button:active {
     <div class="joystick-stick" id="joystickStick"></div>
   </div>
 
-  <button id="sitBtn" class="py-2 rounded-lg w-full">SIT</button>
-  <button id="standBtn" class="py-2 rounded-lg w-full">STAND</button>
-  <button id="waveBtn" class="py-2 rounded-lg w-full">WAVE</button>
 </div>
 
 <script>
@@ -114,9 +111,6 @@ const SERVICE_UUID = "12345678-1234-5678-1234-56789abcdef0";
 const CHARACTERISTIC_UUID = "abcdef01-1234-5678-1234-56789abcdef0";
 
 const connectBtn = document.getElementById("connectBtn");
-const sitBtn = document.getElementById("sitBtn");
-const standBtn = document.getElementById("standBtn");
-const waveBtn = document.getElementById("waveBtn");
 const base = document.getElementById("joystickBase");
 const stick = document.getElementById("joystickStick");
 
@@ -147,9 +141,6 @@ async function send(cmd) {
   );
 }
 
-sitBtn.onclick   = () => send("SIT");
-standBtn.onclick = () => send("STAND");
-waveBtn.onclick  = () => send("WAVE");
 
 const maxDist = 40;
 let active = false;
@@ -193,4 +184,5 @@ base.ontouchend = () => { active = false; centerStick(); };
 </script>
 </body>
 </html>
+
 
